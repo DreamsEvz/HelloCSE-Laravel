@@ -75,21 +75,21 @@ class ProfileController extends Controller
     $validatedData = $request->validate([
       'firstname' => 'nullable|string|max:255',
       'lastname' => 'nullable|string|max:255',
-      //Impossible de faire un update sur un form-data et donc de récupérer le fichier
+      //Impossible de récupérer les données depuis un PATCH ou PUT sur un form-data et donc de récupérer le fichier
       'picture' => 'nullable|file|mimes:jpeg,png,jpg,gif,webp|max:2048',
       'status' => 'nullable',
     ]);
 
-    if($request->hasFile('picture')) {
-      $extension = $request->file('picture')->getClientOriginalExtension();
-      $fileName = time() . '_' . uniqid() . '.' . $extension;
-      $imagePath = $request->file('picture')->storeAs('profiles-pictures', $fileName);
-    }
+    // if($request->hasFile('picture')) {
+    //   $extension = $request->file('picture')->getClientOriginalExtension();
+    //   $fileName = time() . '_' . uniqid() . '.' . $extension;
+    //   $imagePath = $request->file('picture')->storeAs('profiles-pictures', $fileName);
+    // }
 
     $profil->update([
       'firstname' => $validatedData['firstname'] ?? $profil->firstname,
       'lastname' => $validatedData['lastname'] ?? $profil->lastname,
-      'picture' => $imagePath ?? $profil->picture,
+      //'picture' => $imagePath ?? $profil->picture,
       'status' => $validatedData['status'] ?? $profil->status,
       'updated_at' => time(),
     ]);
