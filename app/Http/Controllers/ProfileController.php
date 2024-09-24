@@ -75,34 +75,25 @@ class ProfileController extends Controller
     $validatedData = $request->validate([
       'firstname' => 'nullable|string|max:255',
       'lastname' => 'nullable|string|max:255',
+      //Impossible de faire un update sur un form-data
       'picture' => 'nullable|file|mimes:jpeg,png,jpg,gif,webp|max:2048',
       'status' => 'nullable',
     ]);
 
-    //On vérifie ici quand même qu'au moins un des champs est modifié
-    if (!$request->hasAny(['firstname', 'lastname', 'picture', 'status'])) {
-      return response()->json(['error' => 'At least one field must be provided to update.'], 400);
-    }
-
-    if ($request->hasFile('picture')) {
+    if($request->hasFile('picture')) {
       $extension = $request->file('picture')->getClientOriginalExtension();
-
       $fileName = time() . '_' . uniqid() . '.' . $extension;
-
       $imagePath = $request->file('picture')->storeAs('profiles-pictures', $fileName);
+    }
 
     $profil->update([
-      'firstname' => $validatedData['firstname'],
-      'lastname' => $validatedData['lastname'],
-      'picture' => $imagePath,
-      'status' => $validatedData['status'],
+      'firstname' => $validatedData['firstname'] ?? $profil->firstname,
+      'lastname' => $validatedData['lastname'] ?? $profil->lastname,
+      'picture' => $imagePath ?? $profil->picture,
+      'status' => $validatedData['status'] ?? $profil->status,
       'updated_at' => time(),
     ]);
-      return response()->json($profil, 200);
-    }
-    else {
-      return response()->json(['error' => 'No file provided'], 400);
-    }
+    return response()->json($profil, 200);
   }
 
   public function destroy($id)
