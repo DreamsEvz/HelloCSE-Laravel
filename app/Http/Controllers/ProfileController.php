@@ -75,7 +75,7 @@ class ProfileController extends Controller
     $validatedData = $request->validate([
       'firstname' => 'nullable|string|max:255',
       'lastname' => 'nullable|string|max:255',
-      //Impossible de faire un update sur un form-data
+      //Impossible de faire un update sur un form-data et donc de récupérer le fichier
       'picture' => 'nullable|file|mimes:jpeg,png,jpg,gif,webp|max:2048',
       'status' => 'nullable',
     ]);
