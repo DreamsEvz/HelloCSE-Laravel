@@ -20,26 +20,37 @@ class ProfileController extends Controller
 
   public function store(Request $request)
   {
-    $validatedData = $request->validate([
-      'firstname' => 'required|string|max:255',
-      'lastname' => 'required|string|max:255',
-      'picture' => 'required|file',
-      'status' => 'required',
-    ]);
-    
-    //Permet de sauvegarder l'image dans le dossier public/images
-    $imagePath = $request->file('image')->store('images', 'public');
-
-    $profil = Profile::create([
-      'firstname' => $validatedData['firstname'],
-      'lastname' => $validatedData['lastname'],
-      'picture' => $imagePath,
-      'status' => $validatedData['status'],
-      'created_at' => time(),
-    ]);
-
-    return response()->json($profil, 201);
+      $validatedData = $request->validate([
+          'firstname' => 'required|string|max:255',
+          'lastname' => 'required|string|max:255',
+          'picture' => 'required|file|mimes:jpeg,png,jpg,gif,webp|max:2048',
+          'status' => 'required',
+      ]);
+  
+      if ($request->hasFile('picture')) {
+          $extension = $request->file('picture')->getClientOriginalExtension();
+  
+          $fileName = time() . '_' . uniqid() . '.' . $extension;
+  
+          //Images stockés dans le dossier storage/app/private/profiles-pictures
+          $imagePath = $request->file('picture')->storeAs('profiles-pictures', $fileName);
+  
+          $profile = Profile::create([
+              'firstname' => $validatedData['firstname'],
+              'lastname' => $validatedData['lastname'],
+              'picture' => $imagePath,  // Chemin de l'image stockée enregistré en base de donnée
+              'status' => $validatedData['status'],
+              'created_at' => now(),
+          ]);
+  
+          return response()->json([
+              'profile' => $profile,
+          ], 201);
+      } else {
+          return response()->json(['error' => 'No file provided'], 400);
+      }
   }
+  
 
   public function getActiveProfiles()
   {
@@ -60,15 +71,25 @@ class ProfileController extends Controller
   {
     $profil = Profile::findOrFail($id);
 
+    //Nullable sur chacun des champs pour autoriser un partial update
     $validatedData = $request->validate([
-      'firstname' => 'required|string|max:255',
-      'lastname' => 'required|string|max:255',
-      'picture' => 'required|file',
-      'status' => 'required',
+      'firstname' => 'nullable|string|max:255',
+      'lastname' => 'nullable|string|max:255',
+      'picture' => 'nullable|file|mimes:jpeg,png,jpg,gif,webp|max:2048',
+      'status' => 'nullable',
     ]);
 
-    //Permet de sauvegarder l'image dans le dossier public/images
-    $imagePath = $request->file('image')->store('images', 'public');
+    //On vérifie ici quand même qu'au moins un des champs est modifié
+    if (!$request->hasAny(['firstname', 'lastname', 'picture', 'status'])) {
+      return response()->json(['error' => 'At least one field must be provided to update.'], 400);
+    }
+
+    if ($request->hasFile('picture')) {
+      $extension = $request->file('picture')->getClientOriginalExtension();
+
+      $fileName = time() . '_' . uniqid() . '.' . $extension;
+
+      $imagePath = $request->file('picture')->storeAs('profiles-pictures', $fileName);
 
     $profil->update([
       'firstname' => $validatedData['firstname'],
@@ -77,15 +98,18 @@ class ProfileController extends Controller
       'status' => $validatedData['status'],
       'updated_at' => time(),
     ]);
-
-    return response()->json($profil, 200);
+      return response()->json($profil, 200);
+    }
+    else {
+      return response()->json(['error' => 'No file provided'], 400);
+    }
   }
 
-  public function delete($id)
+  public function destroy($id)
   {
     $profil = Profile::findOrFail($id);
     $profil->delete();
 
-    return response()->json(null, 204);
+    return response()->json(['message' => 'succesfully deleted'], 200);
   }
 }
